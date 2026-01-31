@@ -1,0 +1,600 @@
+<html lang="en" class="scroll-smooth"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amalgam Dynamics | Autonomous Loitering Systems</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom Base Styles */
+        :root {
+            --bg-color: #09090b; /* Zinc 950 */
+            --accent-green: #059669; /* Emerald 600 */
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: #d4d4d8; /* Zinc 300 */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+
+        .font-mono {
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        /* Subtle Grid Background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(39, 39, 42, 0.5) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(39, 39, 42, 0.5) 1px, transparent 1px);
+            mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+        }
+
+        /* 3D Drone Loader Animation Styles */
+        .scene-3d {
+            perspective: 1000px;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .drone-assembly {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: float-spin 6s linear infinite;
+        }
+
+        .drone-body {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            left: 70px;
+            top: 70px;
+            border: 1px solid rgba(16, 185, 129, 0.8);
+            background: rgba(16, 185, 129, 0.1);
+            transform: rotateX(90deg);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        }
+
+        .arm {
+            position: absolute;
+            width: 140px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            top: 99px;
+            left: 30px;
+        }
+
+        .arm:nth-child(2) { transform: rotateY(45deg); }
+        .arm:nth-child(3) { transform: rotateY(-45deg); }
+
+        .rotor {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 1px dashed rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            animation: spin 0.5s linear infinite;
+        }
+
+        /* Rotor Positions in 3D space */
+        .rotor-fl { transform: translate3d(20px, -50px, 0) rotateX(90deg); }
+        .rotor-fr { transform: translate3d(140px, -50px, 0) rotateX(90deg); }
+        .rotor-bl { transform: translate3d(20px, 50px, 0) rotateX(90deg); }
+        .rotor-br { transform: translate3d(140px, 50px, 0) rotateX(90deg); }
+
+        @keyframes float-spin {
+            0% { transform: rotateX(60deg) rotateZ(0deg); }
+            100% { transform: rotateX(60deg) rotateZ(360deg); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scroll Reveal Animations */
+        .reveal-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+            filter: blur(4px);
+        }
+
+        .reveal-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+            filter: blur(0);
+        }
+
+        /* Loading Bar Animation */
+        @keyframes load-progress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        .loading-bar-fill {
+            animation: load-progress 2.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        /* Schematic visual styles */
+        .schematic-box {
+            background-image: 
+                linear-gradient(to right, #27272a 1px, transparent 1px),
+                linear-gradient(to bottom, #27272a 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-300 selection:bg-emerald-900 selection:text-white overflow-hidden" onload="initSite()">
+
+    <!-- INTRO LOADING SCREEN -->
+    <div id="boot-sequence" class="fixed inset-0 z-[100] bg-zinc-950 flex flex-col items-center justify-center">
+        <!-- 3D Drone Schematic Container -->
+        <div class="scene-3d mb-12">
+            <div class="drone-assembly">
+                <!-- Central Unit -->
+                <div class="drone-body flex items-center justify-center">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                </div>
+                <!-- Arms -->
+                <div class="arm"></div> <!-- Cross structure -->
+                <div class="arm" style="transform: rotateY(90deg)"></div>
+                
+                <!-- Rotors -->
+                <div class="rotor" style="top: 0; left: 80px; transform: translateZ(70px) rotateX(90deg)"></div>
+                <div class="rotor" style="top: 0; left: 80px; transform: translateZ(-70px) rotateX(90deg)"></div>
+                <div class="rotor" style="top: 0; left: 80px; transform: translateX(70px) rotateX(90deg)"></div>
+                <div class="rotor" style="top: 0; left: 80px; transform: translateX(-70px) rotateX(90deg)"></div>
+            </div>
+        </div>
+
+        <!-- Text Readout -->
+        <div class="w-64 space-y-4">
+            <div class="flex justify-between font-mono text-[10px] text-emerald-500 uppercase tracking-widest">
+                <span>System Boot</span>
+                <span id="load-percent">0%</span>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full h-[1px] bg-zinc-800 relative overflow-hidden">
+                <div class="absolute top-0 left-0 h-full bg-emerald-500 loading-bar-fill"></div>
+            </div>
+
+            <!-- Scramble Text -->
+            <div class="h-12 font-mono text-[10px] text-zinc-500 space-y-1">
+                <div class="animate-pulse"> &gt; INITIALIZING SENSORS...</div>
+                <div class="hidden sm:block opacity-50"> &gt; CALIBRATING VIO OPTICS...</div>
+                <div class="hidden sm:block opacity-50"> &gt; CHECKING ROTOR INTEGRITY...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN SITE CONTENT (Hidden initially) -->
+    <div id="main-interface" class="opacity-0 transition-opacity duration-1000">
+        
+        <!-- Navigation -->
+        <nav class="fixed top-0 left-0 w-full z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-sm">
+            <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:radar-linear" class="text-zinc-100 text-xl"></iconify-icon>
+                    <span class="font-mono text-xs tracking-[0.2em] font-medium text-white uppercase">Amalgam Dynamics</span>
+                </div>
+                <div class="hidden md:flex gap-8">
+                    <a href="#technology" class="text-xs uppercase tracking-widest hover:text-white transition-colors">Technology</a>
+                    <a href="#specs" class="text-xs uppercase tracking-widest hover:text-white transition-colors">Specs</a>
+                    <a href="#contact" class="text-xs uppercase tracking-widest hover:text-white transition-colors">Briefing</a>
+                </div>
+                <div class="md:hidden">
+                     <iconify-icon icon="solar:hamburger-menu-linear" class="text-xl"></iconify-icon>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
+            <!-- Background Effects -->
+            <div class="absolute inset-0 bg-grid opacity-30 pointer-events-none"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-zinc-950/50 to-zinc-950 pointer-events-none"></div>
+            
+            <div class="relative z-10 max-w-4xl mx-auto px-6 text-center reveal-on-scroll">
+                <div class="inline-flex items-center gap-2 px-3 py-1 border border-zinc-800 bg-zinc-900/50 mb-8 rounded-none">
+                    <div class="w-2 h-2 bg-emerald-700 rounded-full animate-pulse"></div>
+                    <span class="font-mono text-xs uppercase tracking-widest text-zinc-400">System Online // v.2.4.0</span>
+                </div>
+                
+                <h1 class="text-5xl md:text-7xl font-medium tracking-tighter text-white mb-6 leading-[1.1]">
+                    Autonomy, where <br>
+                    <span class="text-zinc-500">GPS fails.</span>
+                </h1>
+                
+                <p class="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
+                    Fully autonomous loitering systems designed specifically for GPS-denied, indoor, and subterranean hostile environments.
+                </p>
+                
+                <div class="flex flex-col md:flex-row items-center justify-center gap-4">
+                    <button class="w-full md:w-auto px-8 py-4 bg-white text-zinc-950 font-mono text-sm font-medium tracking-wide hover:bg-zinc-200 transition-colors uppercase border border-white">
+                        Request Briefing
+                    </button>
+                    <button class="w-full md:w-auto px-8 py-4 bg-transparent text-white font-mono text-sm font-medium tracking-wide border border-zinc-700 hover:border-zinc-400 transition-colors uppercase">
+                        View Technology
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Decoration: Bottom corners -->
+            <div class="absolute bottom-10 left-10 hidden md:block reveal-on-scroll">
+                <div class="w-32 h-px bg-zinc-800 mb-2"></div>
+                <span class="font-mono text-[10px] text-zinc-600 uppercase">Lat: 34.0522 N</span>
+            </div>
+            <div class="absolute bottom-10 right-10 hidden md:block text-right reveal-on-scroll">
+                <div class="w-32 h-px bg-zinc-800 mb-2 ml-auto"></div>
+                <span class="font-mono text-[10px] text-zinc-600 uppercase">Long: 118.2437 W</span>
+            </div>
+        </section>
+
+        <!-- Problem Section -->
+        <section class="py-24 border-y border-zinc-900 bg-zinc-950 relative">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6 reveal-on-scroll">
+                    <h2 class="text-3xl md:text-4xl font-medium text-white tracking-tight max-w-xl">
+                        Modern warfare breaks <span class="text-red-700/80">indoors</span>.
+                    </h2>
+                    <div class="h-px bg-zinc-800 flex-grow mb-2 hidden md:block"></div>
+                    <span class="font-mono text-xs text-red-700 uppercase tracking-widest border border-red-900/30 px-2 py-1 bg-red-950/10">Critical Failure Points</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-px bg-zinc-800 border border-zinc-800">
+                    <!-- Card 1 -->
+                    <div class="bg-zinc-950 p-10 hover:bg-zinc-900/40 transition-colors group reveal-on-scroll" style="transition-delay: 100ms">
+                        <div class="w-12 h-12 border border-zinc-800 flex items-center justify-center mb-6 text-red-600 bg-red-950/10 group-hover:border-red-900/50 transition-colors">
+                            <iconify-icon icon="solar:satellite-linear" width="24" height="24"></iconify-icon>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-3">Signal Denial</h3>
+                        <p class="text-sm text-zinc-400 leading-relaxed">
+                            GPS jamming creates denial-of-service zones for traditional UAVs. Standard drones drift and crash without satellite lock.
+                        </p>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="bg-zinc-950 p-10 hover:bg-zinc-900/40 transition-colors group reveal-on-scroll" style="transition-delay: 200ms">
+                        <div class="w-12 h-12 border border-zinc-800 flex items-center justify-center mb-6 text-red-600 bg-red-950/10 group-hover:border-red-900/50 transition-colors">
+                            <iconify-icon icon="solar:gamepad-linear" width="24" height="24"></iconify-icon>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-3">Operator Latency</h3>
+                        <p class="text-sm text-zinc-400 leading-relaxed">
+                            Radio waves cannot penetrate reinforced concrete bunkers or tunnels. Human-in-the-loop control is impossible in deep structures.
+                        </p>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="bg-zinc-950 p-10 hover:bg-zinc-900/40 transition-colors group reveal-on-scroll" style="transition-delay: 300ms">
+                        <div class="w-12 h-12 border border-zinc-800 flex items-center justify-center mb-6 text-red-600 bg-red-950/10 group-hover:border-red-900/50 transition-colors">
+                            <iconify-icon icon="solar:eye-closed-linear" width="24" height="24"></iconify-icon>
+                        </div>
+                        <h3 class="text-lg font-medium text-white mb-3">Blind Entry</h3>
+                        <p class="text-sm text-zinc-400 leading-relaxed">
+                            Soldiers currently breach rooms blind. ISR assets cannot precede the squad into high-risk, confined indoor spaces.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Solution Section -->
+        <section class="py-24 bg-zinc-950 overflow-hidden" id="technology">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                    
+                    <!-- Text Content -->
+                    <div class="order-2 lg:order-1 reveal-on-scroll">
+                        <div class="inline-block mb-4">
+                            <span class="font-mono text-xs text-emerald-600 uppercase tracking-widest border border-emerald-900/30 px-2 py-1 bg-emerald-950/10">Payload: AM-K System</span>
+                        </div>
+                        <h2 class="text-3xl md:text-5xl font-medium text-white tracking-tight mb-8">
+                            AM-K Autonomous <br> Loitering System
+                        </h2>
+                        
+                        <div class="space-y-8">
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 mt-1 text-emerald-600">
+                                    <iconify-icon icon="solar:cpu-linear" width="24"></iconify-icon>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-medium mb-1">True Edge Autonomy</h4>
+                                    <p class="text-sm text-zinc-400 leading-relaxed">No GPS, no external computation. All processing happens on-board via NVIDIA Orin Nano modules.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 mt-1 text-emerald-600">
+                                    <iconify-icon icon="solar:map-arrow-square-linear" width="24"></iconify-icon>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-medium mb-1">Visual-Inertial Navigation</h4>
+                                    <p class="text-sm text-zinc-400 leading-relaxed">VIO algorithms fuse camera data with IMU inputs to navigate complex corridors without satellite signals.</p>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0 mt-1 text-emerald-600">
+                                    <iconify-icon icon="solar:shield-warning-linear" width="24"></iconify-icon>
+                                </div>
+                                <div>
+                                    <h4 class="text-white font-medium mb-1">Hostile Environment Design</h4>
+                                    <p class="text-sm text-zinc-400 leading-relaxed">Carbon-fiber caged rotors. Collision-tolerant frame. Designed to bounce off walls, not crash.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Technical Render / Wireframe -->
+                    <div class="order-1 lg:order-2 relative h-[500px] border border-zinc-800 bg-zinc-900/20 schematic-box flex items-center justify-center reveal-on-scroll">
+                        
+                        <!-- HUD Overlay -->
+                        <div class="absolute inset-4 border border-zinc-800/50">
+                            <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-emerald-500/50"></div>
+                            <div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-emerald-500/50"></div>
+                            <div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-emerald-500/50"></div>
+                            <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-emerald-500/50"></div>
+                            
+                            <!-- Center Crosshair -->
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-emerald-500/30">
+                                <iconify-icon icon="solar:target-linear" width="64" height="64"></iconify-icon>
+                            </div>
+                        </div>
+
+                        <!-- Abstract Drone Illustration (CSS) -->
+                        <div class="relative w-64 h-64 animate-[pulse_4s_ease-in-out_infinite]">
+                            <!-- Body -->
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-zinc-600 bg-zinc-800/50 rounded-full flex items-center justify-center backdrop-blur-sm z-10">
+                                <div class="font-mono text-[10px] text-emerald-400">AM-K CORE</div>
+                            </div>
+                            <!-- Rotors -->
+                            <div class="absolute top-0 left-0 w-20 h-20 border border-dashed border-zinc-700 rounded-full animate-[spin_2s_linear_infinite]"></div>
+                            <div class="absolute top-0 right-0 w-20 h-20 border border-dashed border-zinc-700 rounded-full animate-[spin_2s_linear_infinite_reverse]"></div>
+                            <div class="absolute bottom-0 left-0 w-20 h-20 border border-dashed border-zinc-700 rounded-full animate-[spin_2s_linear_infinite_reverse]"></div>
+                            <div class="absolute bottom-0 right-0 w-20 h-20 border border-dashed border-zinc-700 rounded-full animate-[spin_2s_linear_infinite]"></div>
+                            
+                            <!-- Lidar beams -->
+                            <div class="absolute top-1/2 left-1/2 w-[400px] h-[1px] bg-emerald-900/30 -translate-x-1/2 rotate-45"></div>
+                            <div class="absolute top-1/2 left-1/2 w-[400px] h-[1px] bg-emerald-900/30 -translate-x-1/2 -rotate-45"></div>
+                        </div>
+
+                        <!-- Data Overlay -->
+                        <div class="absolute bottom-8 left-8 font-mono text-[10px] text-emerald-600/80 leading-tight">
+                            BAT_LVL: 98%<br>
+                            LIDAR_RPM: 1200<br>
+                            IMU_CAL: OK
+                        </div>
+                        <div class="absolute top-8 right-8 font-mono text-[10px] text-zinc-600 leading-tight text-right">
+                            OBJ_DETECT: ACTIVE<br>
+                            VIO_LOCK: TRUE<br>
+                            GPS: N/A
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Technology Stack -->
+        <section class="py-24 bg-zinc-950 border-t border-zinc-900">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="mb-12 reveal-on-scroll">
+                    <h2 class="text-2xl font-medium text-white tracking-tight mb-2">Built on proven aerospace systems.</h2>
+                    <p class="text-zinc-500 text-sm">Hardware and software stack designed for modularity and reliability.</p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="border border-zinc-800 p-6 bg-zinc-900/20 hover:border-zinc-600 transition-colors reveal-on-scroll" style="transition-delay: 100ms">
+                        <span class="font-mono text-[10px] text-zinc-500 uppercase block mb-3">Compute</span>
+                        <div class="text-white font-medium text-sm">NVIDIA Jetson Orin Nano</div>
+                    </div>
+                    <div class="border border-zinc-800 p-6 bg-zinc-900/20 hover:border-zinc-600 transition-colors reveal-on-scroll" style="transition-delay: 200ms">
+                        <span class="font-mono text-[10px] text-zinc-500 uppercase block mb-3">Middleware</span>
+                        <div class="text-white font-medium text-sm">ROS 2 Humble</div>
+                    </div>
+                    <div class="border border-zinc-800 p-6 bg-zinc-900/20 hover:border-zinc-600 transition-colors reveal-on-scroll" style="transition-delay: 300ms">
+                        <span class="font-mono text-[10px] text-zinc-500 uppercase block mb-3">Flight Stack</span>
+                        <div class="text-white font-medium text-sm">ArduPilot Custom</div>
+                    </div>
+                    <div class="border border-zinc-800 p-6 bg-zinc-900/20 hover:border-zinc-600 transition-colors reveal-on-scroll" style="transition-delay: 400ms">
+                        <span class="font-mono text-[10px] text-zinc-500 uppercase block mb-3">Vision</span>
+                        <div class="text-white font-medium text-sm">YOLOv8 + VIO</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cost Advantage / Table -->
+        <section class="py-24 bg-zinc-950 relative" id="specs">
+            <div class="max-w-4xl mx-auto px-6 reveal-on-scroll">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-medium text-white tracking-tight mb-4">Autonomy is the cost advantage.</h2>
+                </div>
+
+                <div class="border border-zinc-800">
+                    <div class="grid grid-cols-3 bg-zinc-900/50 border-b border-zinc-800 text-xs font-mono uppercase tracking-wider text-zinc-500">
+                        <div class="p-4 border-r border-zinc-800">Feature</div>
+                        <div class="p-4 border-r border-zinc-800">Legacy Systems</div>
+                        <div class="p-4 text-emerald-600 bg-emerald-950/10">AM-K System</div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 border-b border-zinc-800 text-sm">
+                        <div class="p-4 border-r border-zinc-800 font-medium text-zinc-400">Unit Cost</div>
+                        <div class="p-4 border-r border-zinc-800 text-zinc-500">$6,000+</div>
+                        <div class="p-4 text-white bg-emerald-950/5 font-medium">~$1,000</div>
+                    </div>
+
+                    <div class="grid grid-cols-3 border-b border-zinc-800 text-sm">
+                        <div class="p-4 border-r border-zinc-800 font-medium text-zinc-400">Operator Req.</div>
+                        <div class="p-4 border-r border-zinc-800 text-zinc-500">1 Pilot per Drone</div>
+                        <div class="p-4 text-white bg-emerald-950/5 font-medium">1 Operator / Swarm</div>
+                    </div>
+
+                    <div class="grid grid-cols-3 border-b border-zinc-800 text-sm">
+                        <div class="p-4 border-r border-zinc-800 font-medium text-zinc-400">Comms Link</div>
+                        <div class="p-4 border-r border-zinc-800 text-zinc-500">Continuous RF</div>
+                        <div class="p-4 text-white bg-emerald-950/5 font-medium">Fire &amp; Forget</div>
+                    </div>
+
+                    <div class="grid grid-cols-3 text-sm">
+                        <div class="p-4 border-r border-zinc-800 font-medium text-zinc-400">Ground Station</div>
+                        <div class="p-4 border-r border-zinc-800 text-zinc-500">Heavy Case + Antenna</div>
+                        <div class="p-4 text-white bg-emerald-950/5 font-medium">None Required</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Traction / Team -->
+        <section class="py-24 border-y border-zinc-900">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="flex flex-col md:flex-row justify-between items-start mb-12 reveal-on-scroll">
+                    <h2 class="text-2xl font-medium text-white tracking-tight max-w-md">Built by a battle-tested technical team.</h2>
+                    <div class="mt-4 md:mt-0 text-right">
+                        <p class="text-sm text-zinc-500">5+ years collaborative engineering.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Founder 1 -->
+                    <div class="border border-zinc-800 p-6 hover:border-zinc-500 transition-colors reveal-on-scroll" style="transition-delay: 100ms">
+                        <div class="font-mono text-xs text-zinc-500 uppercase mb-4">Co-Founder / CEO</div>
+                        <h3 class="text-lg text-white font-medium mb-1">Alex Vance</h3>
+                        <p class="text-sm text-zinc-400">Ex-Lockheed Skunk Works. Aerospace Engineering, MIT.</p>
+                    </div>
+
+                     <!-- Founder 2 -->
+                     <div class="border border-zinc-800 p-6 hover:border-zinc-500 transition-colors reveal-on-scroll" style="transition-delay: 200ms">
+                        <div class="font-mono text-xs text-zinc-500 uppercase mb-4">Co-Founder / CTO</div>
+                        <h3 class="text-lg text-white font-medium mb-1">Sarah Chen</h3>
+                        <p class="text-sm text-zinc-400">DARPA SubT Challenge Finalist. Computer Vision &amp; AI.</p>
+                    </div>
+
+                     <!-- Founder 3 -->
+                     <div class="border border-zinc-800 p-6 hover:border-zinc-500 transition-colors reveal-on-scroll" style="transition-delay: 300ms">
+                        <div class="font-mono text-xs text-zinc-500 uppercase mb-4">Founding Engineer</div>
+                        <h3 class="text-lg text-white font-medium mb-1">Marcus Thorne</h3>
+                        <p class="text-sm text-zinc-400">Embedded Systems Specialist. 10y Defense Robotics.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vision -->
+        <section class="py-32 bg-zinc-950">
+            <div class="max-w-3xl mx-auto px-6 text-center reveal-on-scroll">
+                <span class="font-mono text-xs tracking-widest uppercase text-zinc-500 mb-6 block">The Vision</span>
+                <h2 class="text-3xl md:text-5xl font-medium text-white tracking-tight leading-tight mb-8">
+                    Software-defined autonomy for the next generation of defense.
+                </h2>
+                <p class="text-lg text-zinc-400 font-light leading-relaxed">
+                    We are redefining indoor tactical operations. By removing the pilot from the loop, we enable scalability that changes the asymmetric cost equation of modern warfare.
+                </p>
+            </div>
+        </section>
+
+        <!-- Final CTA -->
+        <section class="py-24 bg-zinc-900 border-t border-zinc-800" id="contact">
+            <div class="max-w-5xl mx-auto px-6 text-center reveal-on-scroll">
+                <h2 class="text-4xl md:text-6xl font-medium text-white tracking-tighter mb-10">
+                    The next battlefield has no GPS.
+                </h2>
+                <button class="px-10 py-5 bg-white text-zinc-950 font-mono text-sm font-medium tracking-wide hover:bg-zinc-200 transition-colors uppercase">
+                    Contact Amalgam Dynamics
+                </button>
+                <p class="mt-8 font-mono text-xs text-zinc-500 uppercase tracking-widest">
+                    Restricted Access // Defense Contractors Only
+                </p>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-zinc-950 py-12 border-t border-zinc-900 reveal-on-scroll">
+            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-2 opacity-50">
+                    <iconify-icon icon="solar:radar-linear" class="text-white"></iconify-icon>
+                    <span class="font-mono text-xs tracking-[0.2em] font-medium text-white uppercase">Amalgam Dynamics</span>
+                </div>
+                
+                <div class="text-zinc-600 text-xs font-mono">
+                    © 2024 Amalgam Dynamics. All Systems Operational.
+                </div>
+
+                <div class="flex gap-6">
+                    <a href="#" class="text-zinc-600 hover:text-white transition-colors text-xs uppercase tracking-wider">Legal</a>
+                    <a href="#" class="text-zinc-600 hover:text-white transition-colors text-xs uppercase tracking-wider">Privacy</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function initSite() {
+            // Update Loading Percentage
+            const percentEl = document.getElementById('load-percent');
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 5) + 1;
+                if(progress > 100) progress = 100;
+                percentEl.innerText = progress + '%';
+                if(progress === 100) clearInterval(interval);
+            }, 60);
+
+            // Boot Sequence Timeout
+            setTimeout(() => {
+                const loader = document.getElementById('boot-sequence');
+                const main = document.getElementById('main-interface');
+                const body = document.body;
+                
+                // Hide Loader
+                loader.style.transition = 'opacity 0.5s ease-out';
+                loader.style.opacity = '0';
+                
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    // Show Main Content
+                    main.style.opacity = '1';
+                    body.style.overflowY = 'auto'; // Enable scroll
+                    
+                    // Initialize Scroll Observer after content is visible
+                    initObserver();
+                }, 500);
+
+            }, 2600); // 2.6s Loading Time
+        }
+
+        function initObserver() {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                        observer.unobserve(entry.target); // Only animate once
+                    }
+                });
+            }, observerOptions);
+
+            const elements = document.querySelectorAll('.reveal-on-scroll');
+            elements.forEach(el => observer.observe(el));
+        }
+    </script>
+
+
+</body></html>
